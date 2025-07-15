@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net7.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RestorePackagesPath>C:\TEMP\nuget-cache</RestorePackagesPath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.Management" Version="6.0.0" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="LibreHardwareMonitorLib">
+      <HintPath>lib\LibreHardwareMonitorLib.dll</HintPath>
+      <HintPath>lib\GetCoreTempInfoNET.dll
+</HintPath>
+    </Reference>
+  </ItemGroup>
+
+</Project>
