@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using Newtonsoft.Json;
 using LibreHardwareMonitor.Hardware;
+using Newtonsoft.Json.Linq;
 
 using Timer = System.Windows.Forms.Timer;
 
@@ -50,21 +51,27 @@ namespace FloatingStatusMonitor
         public const int WM_NCLBUTTONDOWN = 0xA1;
         public const int HT_CAPTION = 0x2;
 
-        private Label cpuLabel, ram1Label, ram2Label, tempLabel;
+        // private Label cpuLabel, ram1Label, ram2Label, tempLabel;
         private Timer updateTimer;
         private Computer computer;
         private Config config;
         private FileSystemWatcher watcher;
         private NotifyIcon trayIcon;
-        // private const string ConfigPath = "config.json";
-        private static string ConfigPath = Path.Combine(
-            Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location) ?? string.Empty,
-            "config.json"
-        );
+        private Label? cpuLabel, ram1Label, ram2Label, tempLabel; // Nullable
+        private string exeDir = AppContext.BaseDirectory;
+        private string ConfigPath;
+        // private string path = Path.Combine(exeDir, "config.json");
+        // private string ConfigPath = Path.Combine(
+        //     // Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location) ?? string.Empty,
+        //     // "config.json"
+        //     Path.Combine(exeDir, "config.json")
+        // );
 
 
         public Form1()
         {
+            ConfigPath = Path.Combine(exeDir, "config.json");
+
             this.Load += (s, e) => ApplyConfig();
 
             config = LoadConfigFromDisk();
@@ -195,6 +202,20 @@ namespace FloatingStatusMonitor
             }
         }
 
+        // private Config LoadConfigFromDisk()
+        // {
+        //     if (File.Exists(ConfigPath))
+        //     {
+        //         try
+        //         {
+        //             string json = File.ReadAllText(ConfigPath);
+        //             return JsonConvert.DeserializeObject<Config>(json) ?? new Config();
+        //         }
+        //         catch { }
+        //     }
+        //     return new Config();
+        // }
+
         private Config LoadConfigFromDisk()
         {
             if (File.Exists(ConfigPath))
@@ -202,7 +223,10 @@ namespace FloatingStatusMonitor
                 try
                 {
                     string json = File.ReadAllText(ConfigPath);
-                    return JsonConvert.DeserializeObject<Config>(json) ?? new Config();
+                    var jObj = JsonConvert.DeserializeObject<Newtonsoft.Json.Linq.JObject>(json);
+                    var node = jObj?["FloatingStatusMonitor"];
+                    if (node != null)
+                        return node.ToObject<Config>() ?? new Config();
                 }
                 catch { }
             }
@@ -369,6 +393,26 @@ namespace FloatingStatusMonitor
             return 0;
         }
 
+        // private void SaveCurrentGeometry()
+        // {
+        //     try
+        //     {
+        //         config.WindowX = this.Location.X;
+        //         config.WindowY = this.Location.Y;
+        //         config.WindowWidth = this.Size.Width;
+        //         config.WindowHeight = this.Size.Height;
+                
+        //         string json = JsonConvert.SerializeObject(config, Formatting.Indented);
+        //         File.WriteAllText(ConfigPath, json);
+                
+        //         Debug.WriteLine($"Geometry saved: X={config.WindowX}, Y={config.WindowY}, W={config.WindowWidth}, H={config.WindowHeight}");
+        //     }
+        //     catch (Exception ex)
+        //     {
+        //         Debug.WriteLine("Save geometry error: " + ex.Message);
+        //     }
+        // }
+
         private void SaveCurrentGeometry()
         {
             try
@@ -377,10 +421,21 @@ namespace FloatingStatusMonitor
                 config.WindowY = this.Location.Y;
                 config.WindowWidth = this.Size.Width;
                 config.WindowHeight = this.Size.Height;
-                
-                string json = JsonConvert.SerializeObject(config, Formatting.Indented);
-                File.WriteAllText(ConfigPath, json);
-                
+
+                JObject jObj;
+                if (File.Exists(ConfigPath))
+                {
+                    string json = File.ReadAllText(ConfigPath);
+                    jObj = JsonConvert.DeserializeObject<JObject>(json) ?? new JObject();
+                }
+                else
+                {
+                    jObj = new JObject();
+                }
+
+                jObj["FloatingStatusMonitor"] = JObject.FromObject(config);
+
+                File.WriteAllText(ConfigPath, jObj.ToString(Formatting.Indented));
                 Debug.WriteLine($"Geometry saved: X={config.WindowX}, Y={config.WindowY}, W={config.WindowWidth}, H={config.WindowHeight}");
             }
             catch (Exception ex)
